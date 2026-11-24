@@ -11,24 +11,32 @@ export function TvProxyTest() {
   const [busy, setBusy] = useState(false)
   const [lines, setLines] = useState<string[]>([])
 
-  async function run() {
+  async function run(mode: 'rewrite' | 'function' = 'rewrite') {
     if (!/^\d{6}$/.test(otp)) { setLines(['Enter a six-digit code.']); return }
     setBusy(true)
     setLines([])
     const log = (line: string) => setLines(previous => [...previous, line])
     async function get(path: string, headers: Record<string, string>) {
-      const response = await fetch(`/tv-api/${path}`, {
+      const response = await fetch(mode === 'function' ? `/api/tv?endpoint=${path}` : `/tv-api/${path}`, {
         method: 'GET', headers: { ...commonHeaders, ...headers },
         cache: 'no-store', redirect: 'error', credentials: 'omit',
         signal: AbortSignal.timeout(20_000),
       })
       log(`${path}: HTTP ${response.status}`)
-      if (!response.ok) throw new Error(`${path} returned HTTP ${response.status}`)
+      if (!response.ok) {
+        let detail = ''
+        if (mode === 'function') {
+          const error: unknown = await response.json().catch(() => null)
+          if (error && typeof error === 'object' && 'error' in error && typeof error.error === 'string') detail = `: ${error.error}`
+        }
+        throw new Error(`${path} returned HTTP ${response.status}${detail}`)
+      }
       const body: unknown = await response.json()
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error(`${path}: expected a JSON object`)
       return body as Record<string, unknown>
     }
     try {
+      log(`Mode: ${mode === 'function' ? 'server function' : 'external rewrite'}`)
       log(import.meta.env.DEV ? 'LOCAL Vite proxy test. Repeat on Vercel to confirm its external rewrites.' : `Testing deployed proxy at ${location.origin}`)
       const discovery = await get('discovery', {})
       if (typeof discovery.token_hash !== 'string') throw new Error('Discovery did not return token_hash')
@@ -57,7 +65,8 @@ export function TvProxyTest() {
     <label className="block">Six-digit code
       <input className="ml-3 rounded border p-2" aria-label="Six-digit code" inputMode="numeric" autoComplete="off" maxLength={6} value={otp} disabled={busy} onChange={event => setOtp(event.target.value)} />
     </label>
-    <button className="action" disabled={busy} onClick={() => { void run() }}>{busy ? 'Testing…' : 'Test OTP and protected API'}</button>
+    <button className="action" disabled={busy} onClick={() => { void run('rewrite') }}>{busy ? 'Testing…' : 'Test OTP and protected API'}</button>
+    {!import.meta.env.DEV && <button className="action ml-3" disabled={busy} onClick={() => { void run('function') }}>Test server function</button>}
     <pre role="status" aria-live="polite" className="whitespace-pre-wrap rounded bg-neutral-100 p-4 text-sm">{lines.join('\n') || 'Ready.'}</pre>
   </main>
 }
