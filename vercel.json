@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "source": "/tv-api/:path*",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-store, max-age=0" }]
+    }
+  ],
+  "rewrites": [
+    { "source": "/tv-api/discovery", "destination": "https://mobiledetects.com/checknewtv.php" },
+    { "source": "/tv-api/otp", "destination": "https://tv.imgcdn.kim/newtv/otp.php" },
+    { "source": "/tv-api/main", "destination": "https://tv.imgcdn.kim/newtv/main.php" }
+  ]
+}

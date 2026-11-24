@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, sans-serif;
+  color: #111;
+  background: #fff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+@layer components {
+  .action {
+    @apply rounded border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-50 disabled:cursor-wait disabled:opacity-50;
+  }
+}
